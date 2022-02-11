@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 # coding: utf-8
 # Copyright 2016 Abram Hindle, https://github.com/tywtyw2002, and https://github.com/treedust
-# 
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-# 
+#
 #     http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -23,6 +23,7 @@ import socket
 import re
 # you may use urllib to encode data appropriately
 import urllib.parse
+from datetime import datetime
 
 def help():
     print("httpclient.py [GET/POST] [URL]\n")
@@ -41,17 +42,20 @@ class HTTPClient(object):
         return None
 
     def get_code(self, data):
-        return None
+        return int(data.split()[0])
 
     def get_headers(self,data):
-        return None
+        inter = data.split("\r\n\r\n")[0]
+        inter = inter.split("\r\n")[1:]
+        inter = inter.join("\r\n")
+        return inter
 
     def get_body(self, data):
-        return None
-    
+        return data.split("\r\n\r\n")[1]
+
     def sendall(self, data):
         self.socket.sendall(data.encode('utf-8'))
-        
+
     def close(self):
         self.socket.close()
 
@@ -68,21 +72,41 @@ class HTTPClient(object):
         return buffer.decode('utf-8')
 
     def GET(self, url, args=None):
-        code = 500
-        body = ""
+        t = datetime.now().strftime("%a, %d %b %y %H:%M:%S GMT")
+        get_request = "GET / HTTP/1.1 \r\n" + "Host: " + url + "\r\n" + t + "\r\n" "Connection: closed \r\n\r\n"
+
+        self.sendall(get_request)
+
+        response = self.recvall(self.socket)
+        self.close()
+        code = get_code(response)
+        body = get_body(response)
+
         return HTTPResponse(code, body)
 
     def POST(self, url, args=None):
-        code = 500
-        body = ""
+        t = datetime.now().strftime("%a, %d %b %y %H:%M:%S GMT")
+        post_request = "POST / HTTP/1.1 \r\n" + "Host: " + url + "\r\n" + t + "\r\n" "Connection: closed \r\n\r\n"
+
+        self.sendall(post_request)
+
+        response = self.recvall(self.socket)
+        self.close()
+        code = get_code(response)
+        body = get_body(response)
+
         return HTTPResponse(code, body)
+
+        #code = 500
+        #body = ""
+        #return HTTPResponse(code, body)
 
     def command(self, url, command="GET", args=None):
         if (command == "POST"):
             return self.POST( url, args )
         else:
             return self.GET( url, args )
-    
+
 if __name__ == "__main__":
     client = HTTPClient()
     command = "GET"
